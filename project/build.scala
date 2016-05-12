@@ -289,7 +289,7 @@ object ScalatraBuild extends Build {
     lazy val akkaActor                =  "com.typesafe.akka"       %% "akka-actor"                 % akkaVersion
     lazy val akkaTestkit              =  "com.typesafe.akka"       %% "akka-testkit"               % akkaVersion
     // TODO: 2.3 has incompatible API changes
-    lazy val atmosphereRuntime        =  "org.atmosphere"          %  "atmosphere-runtime"         % "2.2.9"
+    lazy val atmosphereRuntime        =  "org.atmosphere"          %  "atmosphere-runtime"         % "2.4.3"
     lazy val atmosphereJQuery         =  "org.atmosphere.client"   %  "jquery"                     % "2.2.13" artifacts(Artifact("jquery", "war", "war"))
     lazy val atmosphereClient         =  "org.atmosphere"          %  "wasync"                     % "2.1.2"
     lazy val atmosphereRedis          =  "org.atmosphere"          %  "atmosphere-redis"           % "2.3.2"

@@ -1,25 +1,26 @@
 package org.atmosphere.cpr
 
+import java.util
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
 
 import akka.actor.ActorSystem
 import grizzled.slf4j.Logger
-import org.scalatra.atmosphere.{ ScalatraBroadcaster, WireFormat }
-import org.atmosphere.cpr.BroadcasterLifeCyclePolicy.ATMOSPHERE_RESOURCE_POLICY
+import org.atmosphere.cpr.BroadcasterFactory.BroadcasterCreationException
+import org.scalatra.atmosphere.{ScalatraBroadcaster, WireFormat}
 
 import scala.collection.JavaConverters._
-import scala.collection.concurrent.{ Map => ConcurrentMap }
-import scala.util.{ Try, Success, Failure }
+import scala.collection.concurrent.{Map => ConcurrentMap}
+import scala.util.{Failure, Success, Try}
 
 object ScalatraBroadcasterFactory {
 }
 
 class ScalatraBroadcasterFactory(var cfg: AtmosphereConfig, bCfg: BroadcasterConf)(implicit wireFormat: WireFormat, system: ActorSystem) extends BroadcasterFactory {
-  BroadcasterFactory.setBroadcasterFactory(this, cfg)
 
   private[this] val logger = Logger[ScalatraBroadcasterFactory]
   private[this] val store: ConcurrentMap[Any, Broadcaster] = new ConcurrentHashMap[Any, Broadcaster]().asScala
+  private[this] val listeners: Iterable[BroadcasterListener] = new ConcurrentLinkedQueue[BroadcasterListener].asScala
 
   override def configure(clazz: Class[_ <: Broadcaster], broadcasterLifeCyclePolicy: String, c: AtmosphereConfig) {
     this.cfg = c
@@ -47,7 +48,10 @@ class ScalatraBroadcasterFactory(var cfg: AtmosphereConfig, bCfg: BroadcasterCon
       }
       b
     } catch {
-      case ex: Exception => throw new DefaultBroadcasterFactory.BroadcasterCreationException(ex)
+
+      case ex: Exception => {
+        throw new BroadcasterCreationException(ex)
+      }
     }
   }
 
@@ -70,7 +74,6 @@ class ScalatraBroadcasterFactory(var cfg: AtmosphereConfig, bCfg: BroadcasterCon
     if (bc != null) bc.forceDestroy()
 
     store.clear()
-    BroadcasterFactory.factory = null
   }
 
   def get(): Broadcaster = lookup(UUID.randomUUID().toString)
@@ -144,5 +147,19 @@ class ScalatraBroadcasterFactory(var cfg: AtmosphereConfig, bCfg: BroadcasterCon
         logger.warn(ex.getMessage, ex)
       }
     }
+  }
+
+  override def broadcasterListeners(): util.Collection[BroadcasterListener] = {
+    listeners.asJavaCollection
+  }
+
+  override def addBroadcasterListener(b: BroadcasterListener): BroadcasterFactory = {
+    broadcasterListeners().add(b)
+    cfg.getBroadcasterFactory
+  }
+
+  override def removeBroadcasterListener(b: BroadcasterListener): BroadcasterFactory = {
+    broadcasterListeners().remove()
+    cfg.getBroadcasterFactory
   }
 }

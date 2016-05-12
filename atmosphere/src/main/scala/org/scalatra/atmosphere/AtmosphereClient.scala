@@ -12,18 +12,18 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 
 object AtmosphereClient {
-  def lookupAll(): Seq[ScalatraBroadcaster] = {
-    BroadcasterFactory.getDefault.lookupAll().asScala.toSeq collect {
+  def lookupAll(bf: BroadcasterFactory): Seq[ScalatraBroadcaster] = {
+    bf.lookupAll().asScala.toSeq collect {
       case b: ScalatraBroadcaster => b
     }
   }
 
-  def lookup(path: String): Option[ScalatraBroadcaster] = {
+  def lookup(bf: BroadcasterFactory, path: String): Option[ScalatraBroadcaster] = {
     val pth = path.blankOption getOrElse "/*"
     val norm = if (!pth.endsWith("/*")) {
       if (!pth.endsWith("/")) pth + "/*" else "*"
     } else pth
-    val res: Broadcaster = BroadcasterFactory.getDefault.lookup(norm)
+    val res: Broadcaster = bf.lookup(norm)
     if (res != null && res.isInstanceOf[ScalatraBroadcaster]) {
       Some(res.asInstanceOf[ScalatraBroadcaster])
     } else {
@@ -31,12 +31,12 @@ object AtmosphereClient {
     }
   }
 
-  def broadcast(path: String, message: OutboundMessage, filter: ClientFilter = new Everyone)(implicit executionContext: ExecutionContext) = {
-    lookup(path) foreach { _.broadcast(message, filter) }
+  def broadcast(bf: BroadcasterFactory, path: String, message: OutboundMessage, filter: ClientFilter = new Everyone)(implicit executionContext: ExecutionContext) = {
+    lookup(bf, path) foreach { _.broadcast(message, filter) }
   }
 
-  def broadcastAll(message: OutboundMessage, filter: ClientFilter = new Everyone)(implicit executionContext: ExecutionContext) = {
-    lookupAll() foreach {
+  def broadcastAll(bf: BroadcasterFactory, message: OutboundMessage, filter: ClientFilter = new Everyone)(implicit executionContext: ExecutionContext) = {
+    lookupAll(bf) foreach {
       _ broadcast (message, filter)
     }
   }
